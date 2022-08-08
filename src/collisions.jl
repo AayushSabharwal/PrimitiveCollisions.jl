@@ -63,8 +63,7 @@ into the opposite frame of reference.
 function invert(coldata::CollisionData{R}, current_state::State{R}) where {R}
     s, c = sincos(current_state.rel_rot)
     return CollisionData{R}(
-        coldata.separation,
-        SMatrix{2,2,R}(c, -s, s, c) * -coldata.direction,
+        coldata.separation, SMatrix{2,2,R}(c, -s, s, c) * -coldata.direction
     )
 end
 
@@ -76,9 +75,11 @@ function check_collision(a::AbstractShape{2}, b::AbstractShape{2}, state::State{
 Given two shapes `a` and `b` and a `state` describing the position and rotation of `b`
 relative to `a`, return the [`CollisionData`](@ref) describing their separation.
 """
-function check_collision(a::AbstractShape{2}, b::AbstractShape{2}, state::State{R}) where {R}
+function check_collision(
+    a::AbstractShape{2}, b::AbstractShape{2}, state::State{R}
+) where {R}
     istate = invert(state)
-    invert(check_collision(b, a, istate), istate)
+    return invert(check_collision(b, a, istate), istate)
 end
 
 function check_collision(a::Circle, b::Circle, state::State{R}) where {R}
@@ -96,14 +97,20 @@ end
         if δ[1] <= δ[2]
             return CollisionData{R}(
                 -δ[1],
-                state.rel_pos[1] < zero(R) ? SVector{2}(-one(R), zero(R)) :
-                SVector{2}(one(R), zero(R)),
+                if state.rel_pos[1] < zero(R)
+                    SVector{2}(-one(R), zero(R))
+                else
+                    SVector{2}(one(R), zero(R))
+                end,
             )
         else
             return CollisionData{R}(
                 -δ[2],
-                state.rel_pos[2] < zero(R) ? SVector{2}(zero(R), -one(R)) :
-                SVector{2}(zero(R), one(R)),
+                if state.rel_pos[2] < zero(R)
+                    SVector{2}(zero(R), -one(R))
+                else
+                    SVector{2}(zero(R), one(R))
+                end,
             )
         end
     end
@@ -140,7 +147,6 @@ end
         distances[closest_i],
         (state.rel_pos - points[closest_i]) * b.radius / (distances[closest_i] + b.radius),
     )
-
 end
 
 function check_collision(a::Rect, b::Rect, state::State{R}) where {R}
@@ -183,7 +189,7 @@ end
     separation_distance_1 = R(Inf)
     # positive or negative axis
     separation_axis_1 = zero(SVector{2,R})
-    for i = 1:4
+    for i in 1:4
         # don't need to actually project it, just take the x coordinate
         t = b_points[i][1]
         # outside
@@ -193,7 +199,7 @@ end
                 separation_distance_1 = distance
                 separation_axis_1 = SVector{2,R}(-one(R), zero(R))
             end
-        # inside
+            # inside
         elseif -a.half_ext[1] <= t <= a.half_ext[1]
             distance = min(t + a.half_ext[1], a.half_ext[1] - t)
             axis = if t < zero(R)
@@ -228,7 +234,7 @@ end
     separate_2 = true
     separation_distance_2 = R(Inf)
     separation_axis_2 = zero(SVector{2,R})
-    for i = 1:4
+    for i in 1:4
         t = b_points[i][2]
         if t < -a.half_ext[2]
             distance = -a.half_ext[2] - t

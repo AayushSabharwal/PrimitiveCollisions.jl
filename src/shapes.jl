@@ -27,7 +27,7 @@ A 2-dimensional circle, which stores its `radius`.
 struct Circle{R<:Real} <: AbstractShape{2}
     radius::R
 
-    function Circle{R}(radius::R) where {R}
+    function Circle(radius::R) where {R}
         @assert radius >= zero(R)
         return new{R}(radius)
     end
@@ -52,3 +52,9 @@ A 2-dimensional rectangle which stores its half-extents (`half_ext`) in both dim
 struct Rect{R<:Real} <: AbstractPolygon{2}
     half_ext::SVector{2,R}
 end
+
+function Rect(half_ext::Union{NTuple{2,R},<:AbstractVector{R}}) where {R}
+    return Rect(SVector{2}(half_ext))
+end
+
+Rect(hx, hy) = Rect((hx, hy))

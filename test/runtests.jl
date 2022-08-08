@@ -38,7 +38,7 @@ using Test
     end
 
     @testset "Circle-Rect" begin
-        r1 = Rect(SVector{2}(2.0, 1.0))
+        r1 = Rect(2.0, 1.0)
         c1 = Circle(1.0)
 
         s = State(SVector{2}(0.5, 0.5), π / 3.0)
@@ -73,8 +73,8 @@ using Test
     end
 
     @testset "Rect-Rect" begin
-        r1 = Rect(SVector{2}(1.0, 2.0))
-        r2 = Rect(SVector{2}(0.5, 1.0))
+        r1 = Rect(1.0, 2.0)
+        r2 = Rect(0.5, 1.0)
 
         s = State(SVector{2}(0.0, 0.0), 0.0)
         col = check_collision(r1, r2, s)
