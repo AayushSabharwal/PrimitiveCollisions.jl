@@ -1,7 +1,7 @@
 name = "PrimitiveCollisions"
 uuid = "3b8dc6f2-bddc-4c88-9cf9-9f37a0c17a29"
 authors = ["Aayush Sabharwal <aayush.sabharwal@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

@@ -116,28 +116,7 @@ end
     end
 
     # closest point on each side of the rectangle to the circle
-    points = (
-        point_line_segment_projection(
-            state.rel_pos,
-            SVector{2}(R(-a.half_ext[1]), R(-a.half_ext[2])),
-            SVector{2}(R(-a.half_ext[1]), R(a.half_ext[2])),
-        ),
-        point_line_segment_projection(
-            state.rel_pos,
-            SVector{2}(R(-a.half_ext[1]), R(a.half_ext[2])),
-            SVector{2}(R(a.half_ext[1]), R(a.half_ext[2])),
-        ),
-        point_line_segment_projection(
-            state.rel_pos,
-            SVector{2}(R(a.half_ext[1]), R(a.half_ext[2])),
-            SVector{2}(R(a.half_ext[1]), R(-a.half_ext[2])),
-        ),
-        point_line_segment_projection(
-            state.rel_pos,
-            SVector{2}(R(a.half_ext[1]), R(-a.half_ext[2])),
-            SVector{2}(R(-a.half_ext[1]), R(-a.half_ext[2])),
-        ),
-    )
+    points = point_rect_projection(a, state.rel_pos)
 
     # distances (possibly negative) from point on rectangle to border of circle
     distances = norm.(points .- (state.rel_pos,)) .- b.radius
@@ -172,15 +151,7 @@ end
 # only 2 axes, and we already know the projection of a.
 @inbounds function rect_rect_collision_util(a::Rect, b::Rect, state::State{R}) where {R}
     b_center = state.rel_pos
-
-    s, c = sincos(state.rel_rot)
-    rot_mat = SMatrix{2,2}(c, s, -s, c)
-    b_points = (
-        b_center + rot_mat * (R.(b.half_ext) .* SVector{2}(-one(R), -one(R))),
-        b_center + rot_mat * (R.(b.half_ext) .* SVector{2}(-one(R), one(R))),
-        b_center + rot_mat * (R.(b.half_ext) .* SVector{2}(one(R), one(R))),
-        b_center + rot_mat * (R.(b.half_ext) .* SVector{2}(one(R), -one(R))),
-    )
+    b_points = rect_points(b, state)
 
     # x axis
     # are the bodies separate on this axis
