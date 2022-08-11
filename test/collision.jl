@@ -16,7 +16,7 @@
 
     @testset "Circle-Rect" begin
         r1 = Rect(2.0, 1.0)
-        c1 = Circle(1.0)
+        c1 = Circle(2.0)
 
         s = State(SVector{2}(0.5, 0.5), π / 3.0)
         col = check_collision(r1, c1, s)
@@ -40,12 +40,12 @@
 
         s = State(SVector{2}(1.5, 1.5), π)
         col = check_collision(r1, c1, s)
-        @test col.separation ≈ -0.5
+        @test col.separation ≈ -1.5
         @test all(col.direction .≈ SVector{2}(0.0, 1.0))
 
         s = State(SVector{2}(2.2, 1.2), π + 1.3)
         col = check_collision(r1, c1, s)
-        @test col.separation ≈ 0.2√2.0 - 1.0
+        @test col.separation ≈ 0.2√2.0 - c1.radius
         @test all(col.direction .≈ 1.0 / √2.0)
     end
 

@@ -92,39 +92,45 @@ end
 # making rect rotation-invariant simplifies things, since circle already doesn't care
 @inbounds function check_collision(a::Rect, b::Circle, state::State{R}) where {R}
     # check if center of circle inside rectangle
-    if all(abs.(state.rel_pos) .<= a.half_ext)
+    function center_inside_rect()
         δ = a.half_ext - abs.(state.rel_pos)
-        if δ[1] <= δ[2]
-            return CollisionData{R}(
+        return IfElse.ifelse(
+            δ[1] <= δ[2],
+            CollisionData{R}(
                 -δ[1],
-                if state.rel_pos[1] < zero(R)
-                    SVector{2}(-one(R), zero(R))
-                else
-                    SVector{2}(one(R), zero(R))
-                end,
-            )
-        else
-            return CollisionData{R}(
+                IfElse.ifelse(
+                    state.rel_pos[1] < zero(R),
+                    SVector{2}(-one(R), zero(R)),
+                    SVector{2}(one(R), zero(R)),
+                ),
+            ),
+            CollisionData{R}(
                 -δ[2],
-                if state.rel_pos[2] < zero(R)
-                    SVector{2}(zero(R), -one(R))
-                else
-                    SVector{2}(zero(R), one(R))
-                end,
-            )
-        end
+                IfElse.ifelse(
+                    state.rel_pos[2] < zero(R),
+                    SVector{2}(zero(R), -one(R)),
+                    SVector{2}(zero(R), one(R)),
+                ),
+            ),
+        )
     end
 
-    # closest point on each side of the rectangle to the circle
-    points = point_rect_projection(a, state.rel_pos)
+    function center_outside_rect()
+        # closest point on each side of the rectangle to the circle
+        points = point_rect_projection(a, state.rel_pos)
 
-    # distances (possibly negative) from point on rectangle to border of circle
-    distances = norm.(points .- (state.rel_pos,)) .- b.radius
-    closest_i = argmin(distances)
+        # distances (possibly negative) from point on rectangle to border of circle
+        distances = norm.(points .- (state.rel_pos,)) .- b.radius
+        closest_i = argmin(distances)
 
-    return CollisionData{R}(
-        distances[closest_i],
-        (state.rel_pos - points[closest_i]) * b.radius / (distances[closest_i] + b.radius),
+        return CollisionData{R}(
+            distances[closest_i],
+            (state.rel_pos - points[closest_i]) / (distances[closest_i] + b.radius),
+        )
+    end
+
+    return IfElse.ifelse(
+        all(abs.(state.rel_pos) .<= a.half_ext), center_inside_rect(), center_outside_rect()
     )
 end
 
@@ -136,15 +142,19 @@ function check_collision(a::Rect, b::Rect, state::State{R}) where {R}
     a_coldata = CollisionData{R}(a_separation, a_axis)
     b_coldata = invert(CollisionData{R}(b_separation, b_axis), istate)
 
-    if a_separation > zero(R) && b_separation > zero(R)
-        return a_separation < b_separation ? a_coldata : b_coldata
-    elseif a_separation > zero(R)
-        return a_coldata
-    elseif b_separation > zero(R)
-        return b_coldata
-    else
-        return a_separation < b_separation ? b_coldata : a_coldata
-    end
+    return IfElse.ifelse(
+        a_separation > zero(R) && b_separation > zero(R),
+        a_separation < b_separation ? a_coldata : b_coldata,
+        IfElse.ifelse(
+            a_separation > zero(R),
+            a_coldata,
+            IfElse.ifelse(
+                b_separation > zero(R),
+                b_coldata,
+                a_separation < b_separation ? b_coldata : a_coldata,
+            ),
+        ),
+    )
 end
 
 # use separating axis theorem, projecting points of b onto axes of a
@@ -160,46 +170,75 @@ end
     separation_distance_1 = R(Inf)
     # positive or negative axis
     separation_axis_1 = zero(SVector{2,R})
+
+    function unit_svector(R::Type, index)
+        return IfElse.ifelse(
+            index == 1, SVector{2}(one(R), zero(R)), SVector{2}(zero(R), one(R))
+        )
+    end
+
+    function outside_left(t, separate, separation_distance, separation_axis, index)
+        distance = -a.half_ext[index] - t
+        return IfElse.ifelse(
+            separate && distance < separation_distance,
+            (separate, distance, -unit_svector(R, index)),
+            (separate, separation_distance, separation_axis),
+        )
+    end
+
+    function inside(t, separate, separation_distance, separation_axis, index)
+        distance = min(t + a.half_ext[index], a.half_ext[index] - t)
+        axis = IfElse.ifelse(
+            t < zero(R),
+            -unit_svector(R, index),
+            IfElse.ifelse(
+                t == zero(R),
+                IfElse.ifelse(
+                    b_center[index] > zero(R),
+                    unit_svector(R, index),
+                    -unit_svector(R, index),
+                ),
+                unit_svector(R, index),
+            ),
+        )
+        return IfElse.ifelse(
+            separate,
+            (false, distance, axis),
+            IfElse.ifelse(
+                distance > separation_distance,
+                (separate, distance, axis),
+                (separate, separation_distance, separation_axis),
+            ),
+        )
+    end
+
+    function outside_right(t, separate, separation_distance, separation_axis, index)
+        distance = t - a.half_ext[index]
+        return IfElse.ifelse(
+            separate && distance < separation_distance,
+            (separate, distance, unit_svector(R, index)),
+            (separate, separation_distance, separation_axis),
+        )
+    end
+
+    function projection_separation(t, separate, separation_distance, separation_axis, index)
+        return IfElse.ifelse(
+            t < -a.half_ext[index],
+            outside_left(t, separate, separation_distance, separation_axis, index),
+            IfElse.ifelse(
+                -a.half_ext[index] <= t <= a.half_ext[index],
+                inside(t, separate, separation_distance, separation_axis, index),
+                outside_right(t, separate, separation_distance, separation_axis, index),
+            ),
+        )
+    end
+
     for i in 1:4
         # don't need to actually project it, just take the x coordinate
         t = b_points[i][1]
-        # outside
-        if t < -a.half_ext[1]
-            distance = -a.half_ext[1] - t
-            if separate_1 && distance < separation_distance_1
-                separation_distance_1 = distance
-                separation_axis_1 = SVector{2,R}(-one(R), zero(R))
-            end
-            # inside
-        elseif -a.half_ext[1] <= t <= a.half_ext[1]
-            distance = min(t + a.half_ext[1], a.half_ext[1] - t)
-            axis = if t < zero(R)
-                SVector{2}(-one(R), zero(R))
-            elseif t == zero(R)
-                if b_center[1] > zero(R)
-                    SVector{2}(one(R), zero(R))
-                else
-                    SVector{2}(-one(R), zero(R))
-                end
-            else
-                SVector{2}(one(R), zero(R))
-            end
-            if separate_1
-                separate_1 = false
-                separation_distance_1 = distance
-                separation_axis_1 = axis
-            elseif distance > separation_distance_1
-                separation_distance_1 = distance
-                separation_axis_1 = axis
-            end
-        else
-            # outside
-            distance = t - a.half_ext[1]
-            if separate_1 && distance < separation_distance_1
-                separation_distance_1 = distance
-                separation_axis_1 = SVector{2,R}(one(R), zero(R))
-            end
-        end
+        separate_1, separation_distance_1, separation_axis_1 = projection_separation(
+            t, separate_1, separation_distance_1, separation_axis_1, 1
+        )
     end
 
     separate_2 = true
@@ -207,58 +246,30 @@ end
     separation_axis_2 = zero(SVector{2,R})
     for i in 1:4
         t = b_points[i][2]
-        if t < -a.half_ext[2]
-            distance = -a.half_ext[2] - t
-            if separate_2 && distance < separation_distance_2
-                separation_distance_2 = distance
-                separation_axis_2 = SVector{2}(zero(R), -one(R))
-            end
-        elseif -a.half_ext[2] <= t <= a.half_ext[2]
-            distance = min(t + a.half_ext[2], a.half_ext[2] - t)
-            axis = if t < zero(R)
-                SVector{2}(zero(R), -one(R))
-            elseif t == zero(R)
-                if b_center[2] > zero(R)
-                    SVector{2}(zero(R), -one(R))
-                else
-                    SVector{2}(zero(R), one(R))
-                end
-            else
-                SVector{2}(zero(R), one(R))
-            end
-            distance = t + a.half_ext[2]
-            if separate_2
-                separate_2 = false
-                separation_distance_2 = distance
-                separation_axis_2 = axis
-            elseif distance > separation_distance_2
-                separation_distance_2 = distance
-                separation_axis_2 = axis
-            end
-        else
-            distance = t - a.half_ext[2]
-            if separate_2 && distance < separation_distance_2
-                separation_distance_2 = distance
-                separation_axis_2 = SVector{2}(zero(R), one(R))
-            end
-        end
+        separate_2, separation_distance_2, separation_axis_2 = projection_separation(
+            t, separate_2, separation_distance_2, separation_axis_2, 2
+        )
     end
 
-    if separate_1 && separate_2
-        if separation_distance_1 < separation_distance_2
-            return separation_distance_1, separation_axis_1
-        else
-            return separation_distance_2, separation_axis_2
-        end
-    elseif separate_1
-        return separation_distance_1, separation_axis_1
-    elseif separate_2
-        return separation_distance_2, separation_axis_2
-    else
-        if separation_distance_1 < separation_distance_2
-            return -separation_distance_1, separation_axis_1
-        else
-            return -separation_distance_2, separation_axis_2
-        end
-    end
+    return IfElse.ifelse(
+        separate_1 && separate_2,
+        IfElse.ifelse(
+            separation_distance_1 < separation_distance_2,
+            (separation_distance_1, separation_axis_1),
+            (separation_distance_2, separation_axis_2),
+        ),
+        IfElse.ifelse(
+            separate_1,
+            (separation_distance_1, separation_axis_1),
+            IfElse.ifelse(
+                separate_2,
+                (separation_distance_2, separation_axis_2),
+                IfElse.ifelse(
+                    separation_distance_1 < separation_distance_2,
+                    (-separation_distance_1, separation_axis_1),
+                    (-separation_distance_2, separation_axis_2),
+                ),
+            ),
+        ),
+    )
 end

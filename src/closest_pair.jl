@@ -30,15 +30,18 @@ function closest_pair(a::Rect, b::Rect, state::State{R}) where {R}
     istate = invert(state)
     qb, qa = rect_closest_pair_util(b, a, istate)
 
-    if sqnorm(pa - pb) < sqnorm(qa - qb)
+    function p_closer()
         s, c = sincos(-state.rel_rot)
         rot_mat = SMatrix{2,2}(c, s, -s, c)
         return pa, rot_mat * (pb - state.rel_pos)
-    else
+    end
+
+    function q_closer()
         s, c = sincos(-istate.rel_rot)
         rot_mat = SMatrix{2,2}(c, s, -s, c)
         return rot_mat * (qa - istate.rel_pos), qb
     end
+    return IfElse.ifelse(sqnorm(pa - pb) < sqnorm(qa - qb), p_closer(), q_closer())
 end
 
 function rect_closest_pair_util(a::Rect, b::Rect, state::State{R}) where {R}

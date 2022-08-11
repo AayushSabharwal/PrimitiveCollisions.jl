@@ -2,6 +2,7 @@ module PrimitiveCollisions
 
 using StaticArrays
 using LinearAlgebra
+using IfElse
 
 export AbstractShape, AbstractPolygon, Circle, Point, Rect
 include("shapes.jl")
