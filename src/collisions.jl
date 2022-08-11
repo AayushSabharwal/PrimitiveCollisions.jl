@@ -98,19 +98,25 @@ end
             δ[1] <= δ[2],
             CollisionData{R}(
                 -δ[1],
-                IfElse.ifelse(
-                    state.rel_pos[1] < zero(R),
-                    SVector{2}(-one(R), zero(R)),
-                    SVector{2}(one(R), zero(R)),
-                ),
+                SVector{2}(
+                    IfElse.ifelse(
+                        state.rel_pos[1] < zero(R),
+                        -one(R),
+                        one(R),
+                    ),
+                    zero(R)
+                )
             ),
             CollisionData{R}(
                 -δ[2],
-                IfElse.ifelse(
-                    state.rel_pos[2] < zero(R),
-                    SVector{2}(zero(R), -one(R)),
-                    SVector{2}(zero(R), one(R)),
-                ),
+                SVector{2}(
+                    zero(R),
+                    IfElse.ifelse(
+                        state.rel_pos[2] < zero(R),
+                        -one(R),
+                        one(R),
+                    ),
+                )
             ),
         )
     end
@@ -173,9 +179,9 @@ end
     # positive or negative axis
     separation_axis_1 = zero(SVector{2,R})
 
-    function unit_svector(R::Type, index)
+    function unit_svector(R::Type, index; unit = one(R))
         return IfElse.ifelse(
-            index == 1, SVector{2}(one(R), zero(R)), SVector{2}(zero(R), one(R))
+            index == 1, SVector{2}(unit, zero(R)), SVector{2}(zero(R), unit)
         )
     end
 
@@ -195,11 +201,7 @@ end
             -unit_svector(R, index),
             IfElse.ifelse(
                 t == zero(R),
-                IfElse.ifelse(
-                    b_center[index] > zero(R),
-                    unit_svector(R, index),
-                    -unit_svector(R, index),
-                ),
+                unit_svector(R, index; unit = IfElse.ifelse(b_center[index] > zero(R), one(R), -one(R))),
                 unit_svector(R, index),
             ),
         )
