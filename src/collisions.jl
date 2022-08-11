@@ -130,7 +130,9 @@ end
     end
 
     return IfElse.ifelse(
-        all(abs.(state.rel_pos) .<= a.half_ext), center_inside_rect(), center_outside_rect()
+        # * because all doesn't work right with SVectors of symbols:
+        # https://github.com/SciML/ModelingToolkit.jl/issues/1742
+        *((abs.(state.rel_pos) .<= a.half_ext)...), center_inside_rect(), center_outside_rect()
     )
 end
 
