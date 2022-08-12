@@ -20,7 +20,7 @@ end
 function closest_pair(a::Rect, b::Circle, state::State{R}) where {R}
     points = point_rect_projection(a, state.rel_pos)
     sq_distances = sqnorm.(points .- (state.rel_pos,))
-    closest_i = argmin(sq_distances)
+    closest_i = ifelseargmin(sq_distances)
     δ = (points[closest_i] .- state.rel_pos)
     return (points[closest_i], δ / norm(δ) * b.radius)
 end
@@ -49,8 +49,8 @@ function rect_closest_pair_util(a::Rect, b::Rect, state::State{R}) where {R}
 
     projections = point_rect_projection.((a,), b_points)
     distances = Tuple(sqnorm.(projections[i] .- (b_points[i],)) for i in 1:4)
-    closest_is = argmin.(distances)
-    closest_closest_i = argmin(getindex.(distances, closest_is))
+    closest_is = ifelseargmin.(distances)
+    closest_closest_i = ifelseargmin(getindex.(distances, closest_is))
     best_index = closest_is[closest_closest_i]
 
     return projections[closest_closest_i][best_index], b_points[closest_closest_i]

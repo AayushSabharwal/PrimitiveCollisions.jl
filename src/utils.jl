@@ -1,6 +1,14 @@
 @inline sqnorm(pt::SVector) = dot(pt, pt)
 
-ifelseclamp(x, lo, hi) = IfElse.ifelse(x < lo, lo, IfElse.ifelse(x > hi, hi, x))
+@inline ifelseclamp(x, lo, hi) = IfElse.ifelse(x < lo, lo, IfElse.ifelse(x > hi, hi, x))
+
+function ifelseargmin(arr)
+    best = firstindex(arr)
+    for i in eachindex(arr)
+        @inbounds best = IfElse.ifelse(arr[i] < arr[best], i, best)
+    end
+    return best
+end
 
 @inline function point_line_segment_projection(
     p::SVector{2,F}, u::SVector{2,F}, v::SVector{2,F}

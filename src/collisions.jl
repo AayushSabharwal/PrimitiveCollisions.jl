@@ -117,7 +117,7 @@ end
 
         # distances (possibly negative) from point on rectangle to border of circle
         distances = norm.(points .- (state.rel_pos,)) .- b.radius
-        closest_i = argmin(distances)
+        closest_i = ifelseargmin(distances)
 
         return CollisionData{R}(
             distances[closest_i],
