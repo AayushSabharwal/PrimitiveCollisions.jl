@@ -99,24 +99,14 @@ end
             CollisionData{R}(
                 -δ[1],
                 SVector{2}(
-                    IfElse.ifelse(
-                        state.rel_pos[1] < zero(R),
-                        -one(R),
-                        one(R),
-                    ),
-                    zero(R)
-                )
+                    IfElse.ifelse(state.rel_pos[1] < zero(R), -one(R), one(R)), zero(R)
+                ),
             ),
             CollisionData{R}(
                 -δ[2],
                 SVector{2}(
-                    zero(R),
-                    IfElse.ifelse(
-                        state.rel_pos[2] < zero(R),
-                        -one(R),
-                        one(R),
-                    ),
-                )
+                    zero(R), IfElse.ifelse(state.rel_pos[2] < zero(R), -one(R), one(R))
+                ),
             ),
         )
     end
@@ -138,7 +128,9 @@ end
     return IfElse.ifelse(
         # * because all doesn't work right with SVectors of symbols:
         # https://github.com/SciML/ModelingToolkit.jl/issues/1742
-        *((abs.(state.rel_pos) .<= a.half_ext)...), center_inside_rect(), center_outside_rect()
+        prod(abs.(state.rel_pos) .<= a.half_ext),
+        center_inside_rect(),
+        center_outside_rect(),
     )
 end
 
@@ -201,7 +193,11 @@ end
             -unit_svector(R, index),
             IfElse.ifelse(
                 t == zero(R),
-                unit_svector(R, index; unit = IfElse.ifelse(b_center[index] > zero(R), one(R), -one(R))),
+                unit_svector(
+                    R,
+                    index;
+                    unit = IfElse.ifelse(b_center[index] > zero(R), one(R), -one(R)),
+                ),
                 unit_svector(R, index),
             ),
         )
