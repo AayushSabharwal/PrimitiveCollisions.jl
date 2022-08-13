@@ -21,6 +21,16 @@ function ifelseargmin(arr)
     end
 end
 
+my_getindex(arr, i::Int) = arr[i]
+
+function my_getindex(arr, idx)
+    res = zero(idx)
+    for i in eachindex(arr)
+        res = res + (i == idx) * arr[i]
+    end
+    return res
+end
+
 @inline function point_line_segment_projection(
     p::SVector{2,F}, u::SVector{2,F}, v::SVector{2,F}
 ) where {F}
