@@ -13,7 +13,7 @@ function ifelseargmin(arr)
             if isnothing(res)
                 return ind
             else
-                IfElse.ifelse(arr[ind] == best_val, ind, _argmin_util(arr, res...))
+                IfElse.ifelse(arr[ind] == best_val, ind, _argmin_util(res...))
             end
         end
         
