@@ -3,11 +3,22 @@
 @inline ifelseclamp(x, lo, hi) = IfElse.ifelse(x < lo, lo, IfElse.ifelse(x > hi, hi, x))
 
 function ifelseargmin(arr)
-    best = firstindex(arr)
-    for i in eachindex(arr)
-        @inbounds best = IfElse.ifelse(arr[i] < arr[best], i, best)
+    if (arr[begin] == arr[begin]) isa Bool
+        return argmin(arr)
+    else
+        best_val = minimum(arr)
+        iter = eachindex(arr)
+        function _argmin_util(ind, state)
+            res = iterate(iter, state)
+            if isnothing(res)
+                return ind
+            else
+                IfElse.ifelse(arr[ind] == best_val, ind, _argmin_util(arr, res...))
+            end
+        end
+        
+        return _argmin_util(iterate(iter)...)
     end
-    return best
 end
 
 @inline function point_line_segment_projection(
