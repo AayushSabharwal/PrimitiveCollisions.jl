@@ -27,32 +27,23 @@ function closest_pair(a::Rect, b::Circle, state::State{R}) where {R}
 end
 
 function closest_pair(a::Rect, b::Rect, state::State{R}) where {R}
-    pa, pb = rect_closest_pair_util(a, b, state)
-    istate = invert(state)
-    qb, qa = rect_closest_pair_util(b, a, istate)
-
-    function p_closer()
-        s, c = sincos(-state.rel_rot)
-        rot_mat = SMatrix{2,2}(c, s, -s, c)
-        return pa, rot_mat * (pb - state.rel_pos)
-    end
-
-    function q_closer()
-        s, c = sincos(-istate.rel_rot)
-        rot_mat = SMatrix{2,2}(c, s, -s, c)
-        return rot_mat * (qa - istate.rel_pos), qb
-    end
-    return IfElse.ifelse(sqnorm(pa - pb) < sqnorm(qa - qb), p_closer(), q_closer())
-end
-
-function rect_closest_pair_util(a::Rect, b::Rect, state::State{R}) where {R}
+    a_points = rect_points(a, State(zero(SVector{2,R}), zero(R)))
     b_points = rect_points(b, state)
-
-    projections = point_rect_projection.((a,), b_points)
-    distances = Tuple(sqnorm.(projections[i] .- (b_points[i],)) for i in 1:4)
-    closest_is = ifelseargmin.(distances)
-    closest_closest_i = ifelseargmin(my_getindex.(distances, closest_is))
-    best_index = my_getindex(closest_is, closest_closest_i)
-
-    return my_getindex(my_getindex(projections, closest_closest_i), best_index), my_getindex(b_points, closest_closest_i)
+    function projection_util(x, p, q)
+        y = point_line_segment_projection(x, p, q)
+        return (sqnorm(y - x), x, y)
+    end
+    dist_1 = Tuple(projection_util(a_points[i], b_points[j], b_points[mod1(j+1, 4)]) for i in 1:4, j in 1:4)
+    dist_2 = Tuple(projection_util(b_points[i], a_points[j], a_points[mod1(j+1, 4)]) for i in 1:4, j in 1:4)
+    closest_1 = argmin(x -> x[1], dist_1)
+    closest_2 = argmin(x -> x[1], dist_2)
+    @show closest_1 closest_2
+    if closest_1[1] < closest_2[1]
+        s, c = sincos(state.rel_rot)
+        return closest_1[2], SMatrix{2,2}(c, -s, s, c) * (closest_1[3] - state.rel_pos)
+    else
+        s, c = sincos(state.rel_rot)
+        return closest_2[3], SMatrix{2,2}(c, -s, s, c) * (closest_2[2] - state.rel_pos)
+    end
 end
+

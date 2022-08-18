@@ -30,11 +30,15 @@
 
         s = State(SVector{2}(1.5, 3.0), 0.0)
         pa, pb = closest_pair(r1, r2, s)
+        @show pa pb
         @test all(pa .≈ (1.0, 2.0))
         @test all(pb .≈ (-0.5, -1.0))
 
         s = State(SVector{2}(50.0, 50.0), π / 4)
         pa, pb = closest_pair(r1, r2, s)
+        using LinearAlgebra
+        si, ci = sincos(π / 4)
+        @show pa pb norm(pa - SMatrix{2,2}(ci, -si, si, ci) * pb + s.rel_pos) check_collision(r1, r2, s)
         @test all(pa .≈ (1.0, 2.0))
         @test all(pb .≈ (-0.5, 1.0 / √2.0))
     end
