@@ -9,12 +9,15 @@ are closest to each other. Only valid for shapes that do not intersect.
 """
 function closest_pair(a::AbstractShape{2}, b::AbstractShape{2}, state::State{R}) where {R}
     istate = invert(state)
-    return reverse(closest_pair(b, a, istate))
+    pb, pa = closest_pair(b, a, istate)
+    s, c = sincos(istate.rel_rot)
+    rot_mat = SMatrix{2,2}(c, s, -s, c)
+    return rot_mat * (pa - istate.rel_pos), rot_mat * (pb - istate.rel_pos)
 end
 
 function closest_pair(a::Circle, b::Circle, state::State{R}) where {R}
     dist = norm(state.rel_pos)
-    return (state.rel_pos / dist * a.radius, -state.rel_pos / dist * b.radius)
+    return state.rel_pos / dist * a.radius, state.rel_pos / dist * (dist - b.radius)
 end
 
 function closest_pair(a::Rect, b::Circle, state::State{R}) where {R}
@@ -22,14 +25,13 @@ function closest_pair(a::Rect, b::Circle, state::State{R}) where {R}
     sq_distances = sqnorm.(points .- (state.rel_pos,))
     closest_i = ifelseargmin(sq_distances)
     closest_point = my_getindex(points, closest_i)
-    δ = (closest_point .- state.rel_pos)
-    return (closest_point, δ / norm(δ) * b.radius)
+    δ = (state.rel_pos .- closest_point)
+    return closest_point, closest_point + δ / norm(δ) * (sqrt(sq_distances[closest_i]) - b.radius)
 end
 
 function closest_pair(a::Rect, b::Rect, state::State{R}) where {R}
     a_points = rect_points(a, State(zero(SVector{2,R}), zero(R)))
     b_points = rect_points(b, state)
-    @show a_points b_points
     function projection_util(x, p, q)
         y = point_line_segment_projection(x, p, q)
         return (sqnorm(y - x), x, y)
@@ -40,11 +42,9 @@ function closest_pair(a::Rect, b::Rect, state::State{R}) where {R}
     closest_2 = argmin(x -> x[1], dist_2)
     @show dist_1 dist_2 closest_1 closest_2
     if closest_1[1] < closest_2[1]
-        s, c = sincos(state.rel_rot)
-        return closest_1[2], SMatrix{2,2}(c, -s, s, c) * (closest_1[3] - state.rel_pos)
+        return closest_1[2], closest_1[3]
     else
-        s, c = sincos(state.rel_rot)
-        return closest_2[3], SMatrix{2,2}(c, -s, s, c) * (closest_2[2] - state.rel_pos)
+        return closest_2[3], closest_2[2]
     end
 end
 
