@@ -166,7 +166,7 @@ end
 @inbounds function rect_rect_collision_util(a::Rect, b::Rect, state::State{R}) where {R}
     b_center = state.rel_pos
     b_points = rect_points(b, state)
-
+    @show b_points
     # x axis
     # are the bodies separate on this axis
     separate_1 = true

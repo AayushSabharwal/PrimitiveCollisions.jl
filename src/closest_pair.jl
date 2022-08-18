@@ -29,6 +29,7 @@ end
 function closest_pair(a::Rect, b::Rect, state::State{R}) where {R}
     a_points = rect_points(a, State(zero(SVector{2,R}), zero(R)))
     b_points = rect_points(b, state)
+    @show a_points b_points
     function projection_util(x, p, q)
         y = point_line_segment_projection(x, p, q)
         return (sqnorm(y - x), x, y)
