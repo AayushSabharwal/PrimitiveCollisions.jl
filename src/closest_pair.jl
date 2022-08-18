@@ -38,7 +38,7 @@ function closest_pair(a::Rect, b::Rect, state::State{R}) where {R}
     dist_2 = Tuple(projection_util(b_points[i], a_points[j], a_points[mod1(j+1, 4)]) for i in 1:4, j in 1:4)
     closest_1 = argmin(x -> x[1], dist_1)
     closest_2 = argmin(x -> x[1], dist_2)
-    @show closest_1 closest_2
+    @show dist_1 dist_2 closest_1 closest_2
     if closest_1[1] < closest_2[1]
         s, c = sincos(state.rel_rot)
         return closest_1[2], SMatrix{2,2}(c, -s, s, c) * (closest_1[3] - state.rel_pos)
