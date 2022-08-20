@@ -16,7 +16,7 @@ function ifelseargmin(arr)
                 IfElse.ifelse(arr[ind] == best_val, ind, _argmin_util(res...))
             end
         end
-        
+
         return _argmin_util(iterate(iter)...)
     end
 end

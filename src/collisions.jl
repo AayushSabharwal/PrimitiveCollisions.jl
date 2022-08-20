@@ -164,115 +164,30 @@ end
 # use separating axis theorem, projecting points of b onto axes of a
 # only 2 axes, and we already know the projection of a.
 @inbounds function rect_rect_collision_util(a::Rect, b::Rect, state::State{R}) where {R}
-    b_center = state.rel_pos
     b_points = rect_points(b, state)
-    # x axis
-    # are the bodies separate on this axis
-    separate_1 = true
-    # what is the distance between them
-    separation_distance_1 = R(Inf)
-    # positive or negative axis
-    separation_axis_1 = zero(SVector{2,R})
 
-    function unit_svector(R::Type, index; unit = one(R))
-        return IfElse.ifelse(
-            index == 1, SVector{2}(unit, zero(R)), SVector{2}(zero(R), unit)
-        )
+    x_proj = SVector{2}(minimum(x -> x[1], b_points), maximum(x -> x[1], b_points))
+    y_proj = SVector{2}(minimum(x -> x[2], b_points), maximum(x -> x[2], b_points))
+
+    x_intersect = any(-a.half_ext[1] .<= x_proj .<= a.half_ext[1])
+    y_intersect = any(-a.half_ext[2] .<= y_proj .<= a.half_ext[2])
+
+    function separation_and_axis(proj, ext)
+        temp_1 = abs(proj[2] + ext)
+        temp_2 = abs(ext - proj[1])
+        return IfElse.ifelse(temp_1 < temp_2, (temp_1, -one(R)), (temp_2, one(R)))
     end
 
-    function outside_left(t, separate, separation_distance, separation_axis, index)
-        distance = -a.half_ext[index] - t
-        return IfElse.ifelse(
-            separate && distance < separation_distance,
-            (separate, distance, -unit_svector(R, index)),
-            (separate, separation_distance, separation_axis),
-        )
-    end
-
-    function inside(t, separate, separation_distance, separation_axis, index)
-        distance = min(t + a.half_ext[index], a.half_ext[index] - t)
-        axis = IfElse.ifelse(
-            t < zero(R),
-            -unit_svector(R, index),
-            IfElse.ifelse(
-                t == zero(R),
-                unit_svector(
-                    R,
-                    index;
-                    unit = IfElse.ifelse(b_center[index] > zero(R), one(R), -one(R)),
-                ),
-                unit_svector(R, index),
-            ),
-        )
-        return IfElse.ifelse(
-            separate,
-            (false, distance, axis),
-            IfElse.ifelse(
-                distance > separation_distance,
-                (separate, distance, axis),
-                (separate, separation_distance, separation_axis),
-            ),
-        )
-    end
-
-    function outside_right(t, separate, separation_distance, separation_axis, index)
-        distance = t - a.half_ext[index]
-        return IfElse.ifelse(
-            separate && distance < separation_distance,
-            (separate, distance, unit_svector(R, index)),
-            (separate, separation_distance, separation_axis),
-        )
-    end
-
-    function projection_separation(t, separate, separation_distance, separation_axis, index)
-        return IfElse.ifelse(
-            t < -a.half_ext[index],
-            outside_left(t, separate, separation_distance, separation_axis, index),
-            IfElse.ifelse(
-                -a.half_ext[index] <= t <= a.half_ext[index],
-                inside(t, separate, separation_distance, separation_axis, index),
-                outside_right(t, separate, separation_distance, separation_axis, index),
-            ),
-        )
-    end
-
-    for i in 1:4
-        # don't need to actually project it, just take the x coordinate
-        t = b_points[i][1]
-        separate_1, separation_distance_1, separation_axis_1 = projection_separation(
-            t, separate_1, separation_distance_1, separation_axis_1, 1
-        )
-    end
-
-    separate_2 = true
-    separation_distance_2 = R(Inf)
-    separation_axis_2 = zero(SVector{2,R})
-    for i in 1:4
-        t = b_points[i][2]
-        separate_2, separation_distance_2, separation_axis_2 = projection_separation(
-            t, separate_2, separation_distance_2, separation_axis_2, 2
-        )
-    end
+    x_dist, x_dir = separation_and_axis(x_proj, a.half_ext[1])
+    x_dist = IfElse.ifelse(x_intersect, -x_dist, x_dist)
+    x_ax = SVector{2}(x_dir, zero(R))
+    y_dist, y_dir = separation_and_axis(y_proj, a.half_ext[2])
+    y_dist = IfElse.ifelse(y_intersect, -y_dist, y_dist)
+    y_ax = SVector{2}(zero(R), y_dir)
 
     return IfElse.ifelse(
-        separate_1 && separate_2,
-        IfElse.ifelse(
-            separation_distance_1 < separation_distance_2,
-            (separation_distance_1, separation_axis_1),
-            (separation_distance_2, separation_axis_2),
-        ),
-        IfElse.ifelse(
-            separate_1,
-            (separation_distance_1, separation_axis_1),
-            IfElse.ifelse(
-                separate_2,
-                (separation_distance_2, separation_axis_2),
-                IfElse.ifelse(
-                    separation_distance_1 < separation_distance_2,
-                    (-separation_distance_1, separation_axis_1),
-                    (-separation_distance_2, separation_axis_2),
-                ),
-            ),
-        ),
+        xor(x_intersect, y_intersect),
+        IfElse.ifelse(x_intersect, (x_dist, x_ax), (y_dist, y_ax)),
+        IfElse.ifelse(abs(x_dist) < abs(y_dist), (x_dist, x_ax), (y_dist, y_ax)),
     )
 end
