@@ -55,7 +55,7 @@
 
         s = State(SVector{2}(0.0, 0.0), 0.0)
         col = check_collision(r1, r2, s)
-        @test col.separation ≈ 1.5
+        @test col.separation ≈ -1.5
         @test all(abs.(col.direction) .≈ SVector{2}(1.0, 0.0))
 
         s = State(SVector{2}(1.0, 2.0), 0.0)
@@ -72,7 +72,7 @@
         col = check_collision(r1, r2, s)
         @test col.separation ≈ 0.0
         @test all(col.direction .≈ SVector{2}(0.0, 1.0))
-        
+
         s = State(SVector{2}(0.0, 2.9), 0.0)
         col = check_collision(r1, r2, s)
         @test col.separation ≈ -0.1

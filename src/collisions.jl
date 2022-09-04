@@ -169,13 +169,19 @@ end
     x_proj = SVector{2}(minimum(x -> x[1], b_points), maximum(x -> x[1], b_points))
     y_proj = SVector{2}(minimum(x -> x[2], b_points), maximum(x -> x[2], b_points))
 
-    x_intersect = any(-a.half_ext[1] .<= x_proj .<= a.half_ext[1])
-    y_intersect = any(-a.half_ext[2] .<= y_proj .<= a.half_ext[2])
+    x_intersect =
+        any(-a.half_ext[1] .<= x_proj .<= a.half_ext[1]) ||
+        any(x_proj[1] .<= (-one(R), one(R)) .* a.half_ext[1] .<= x_proj[2])
+    y_intersect =
+        any(-a.half_ext[2] .<= y_proj .<= a.half_ext[2]) ||
+        any(y_proj[1] .<= (-one(R), one(R)) .* a.half_ext[2] .<= y_proj[2])
 
     function separation_and_axis(proj, ext)
-        temp_1 = abs(proj[2] + ext)
-        temp_2 = abs(ext - proj[1])
-        return IfElse.ifelse(temp_1 < temp_2, (temp_1, -one(R)), (temp_2, one(R)))
+        lower_dist = abs(proj[2] + ext)
+        upper_dist = abs(ext - proj[1])
+        return IfElse.ifelse(
+            lower_dist < upper_dist, (lower_dist, -one(R)), (upper_dist, one(R))
+        )
     end
 
     x_dist, x_dir = separation_and_axis(x_proj, a.half_ext[1])
@@ -187,7 +193,7 @@ end
 
     return IfElse.ifelse(
         xor(x_intersect, y_intersect),
-        IfElse.ifelse(x_intersect, (x_dist, x_ax), (y_dist, y_ax)),
+        IfElse.ifelse(x_intersect, (y_dist, y_ax), (x_dist, x_ax)),
         IfElse.ifelse(abs(x_dist) < abs(y_dist), (x_dist, x_ax), (y_dist, y_ax)),
     )
 end

@@ -1,7 +1,7 @@
 name = "PrimitiveCollisions"
 uuid = "3b8dc6f2-bddc-4c88-9cf9-9f37a0c17a29"
 authors = ["Aayush Sabharwal <aayush.sabharwal@gmail.com>"]
-version = "0.5.0"
+version = "0.5.1"
 
 [deps]
 IfElse = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"

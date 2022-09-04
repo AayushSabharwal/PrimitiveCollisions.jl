@@ -42,12 +42,12 @@
         pa, pb = closest_pair(r1, r2, s)
         @test all(pa .≈ (1.0, 2.0))
         @test all(pb .≈ (50.0 - 0.5 / √2.0 - 0.5, 50.0 - 0.5 / √2.0 + 0.5))
-        
+
         s = State(SVector{2}(1.5, 1.0), π)
         pa, pb = closest_pair(r1, r2, s)
         @test all(pa .≈ (1.0, 1.0))
         @test all(pb .≈ (1.0, 1.0))
-        
+
         s = State(SVector{2}(2.0, 1.0), π / 2)
         pa, pb = closest_pair(r1, r2, s)
         @test all(pa .≈ (1.0, 1.0))

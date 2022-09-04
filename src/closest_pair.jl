@@ -95,7 +95,6 @@ function closest_pair(a::Rect, b::Rect, state::State{R}) where {R}
     )
     closest_1 = argmin(x -> x[1], dist_1)
     closest_2 = argmin(x -> x[1], dist_2)
-    @show dist_1 dist_2 closest_1 closest_2
     if closest_1[1] < closest_2[1]
         return closest_1[2], closest_1[3]
     else
