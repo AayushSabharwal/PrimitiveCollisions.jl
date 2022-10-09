@@ -11,7 +11,7 @@ function closest_pair(a::AbstractShape{2}, b::AbstractShape{2}, state::State{R})
     istate = invert(state)
     pb, pa = closest_pair(b, a, istate)
     s, c = sincos(istate.rel_rot)
-    rot_mat = SMatrix{2,2}(c, s, -s, c)
+    rot_mat = SMatrix{2,2}(c, -s, s, c)
     return rot_mat * (pa - istate.rel_pos), rot_mat * (pb - istate.rel_pos)
 end
 

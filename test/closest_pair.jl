@@ -1,4 +1,14 @@
 @testset "Closest Pair" begin
+    @testset "Inversion" begin
+        c1 = Circle(1.0)
+        r1 = Rect(1.0, 1.0)
+
+        s = State(SVector{2}(2.5, 2.5), π / 4.0)
+        pa, pb = closest_pair(c1, r1, s)
+        @test pa ≈ SVector{2}(1.0 / √2.0, 1.0 / √2.0)
+        @test pb ≈ SVector{2}(2.5 - 1.0 / √2.0, 2.5 - 1.0 / √2.0)
+    end
+
     @testset "Circle-Circle" begin
         c1 = Circle(1.0)
         c2 = Circle(2.0)
