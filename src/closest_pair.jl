@@ -23,8 +23,8 @@ end
 function closest_pair(a::Rect, b::Circle, state::State{R}) where {R}
     points = point_rect_projection(a, state.rel_pos)
     sq_distances = sqnorm.(points .- (state.rel_pos,))
-    closest_i = ifelseargmin(sq_distances)
-    closest_point = my_getindex(points, closest_i)
+    closest_i = argmin(sq_distances)
+    closest_point = points[closest_i]
     δ = (state.rel_pos .- closest_point)
     return closest_point,
     closest_point + δ / norm(δ) * (sqrt(sq_distances[closest_i]) - b.radius)
