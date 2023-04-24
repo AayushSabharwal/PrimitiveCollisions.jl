@@ -14,9 +14,9 @@ include("closest_pair.jl")
 include("utils.jl")
 include("prettyprinting.jl")
 
-import SnoopPrecompile
+import PrecompileTools
 
-SnoopPrecompile.@precompile_all_calls begin
+PrecompileTools.@compile_workload begin
     c1 = Circle(1.0)
     r1 = Rect(1.0, 1.0)
 
